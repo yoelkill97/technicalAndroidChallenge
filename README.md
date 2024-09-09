@@ -14,6 +14,7 @@ Este es un repositorio para el desafío técnico de desarrollo Android. El proye
 - Kotlin 1.5+
 - Jetpack Compose
 - Firebase para autenticación y almacenamiento
+- C
 - Navigation compose
 - Hilt
 - Firebase Authentication
@@ -23,10 +24,18 @@ Este es un repositorio para el desafío técnico de desarrollo Android. El proye
 ## Instalación
 
 1. Clona el repositorio:
-   git clone https://github.com/yoelkill97/technicalAndroidChallenge.git
-   Ejecutar pruebas unitarias ejecutando "./gradlew test"
-   Compilar el proyecto
-   Instalar y/o generar apk
+  git clone https://github.com/yoelkill97/technicalAndroidChallenge.git
+2. Navega al directorio del proyecto
+   cd technicalAndroidChallenge
+3. Ejecutar pruebas unitarias ejecutando "./gradlew test"
+4. Compilar el proyecto "./gradlew assembleDebug"
+5. Instalar y/o generar apk "./gradlew installDebug"
+
 
 ## Por Hacer
- Subir el APK a playstore
+ Subir el APK a la Play Store
+
+## Notas Adicionales
+
+Asegúrate de configurar las credenciales de Firebase antes de ejecutar la aplicación.
+Revisa la configuración de autenticación y verifica que las credenciales de Google y Facebook estén correctamente configuradas en la consola de Firebase.
