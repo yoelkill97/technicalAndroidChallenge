@@ -14,7 +14,6 @@ Este es un repositorio para el desafío técnico de desarrollo Android. El proye
 - Kotlin 1.5+
 - Jetpack Compose
 - Firebase para autenticación y almacenamiento
-- C
 - Navigation compose
 - Hilt
 - Firebase Authentication
