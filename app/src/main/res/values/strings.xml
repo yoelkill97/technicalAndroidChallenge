@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">technicalChallenge</string>
+    <string name="facebook_application_id" translatable="false">1:679424530447:android:6083e6fd921baf49e22b7a</string>
+    <string name="facebook_login_protocol_scheme" translatable="false">https://technicalchallenge-c0c2a.firebaseapp.com/__/auth/handler</string>
+
+    <string name="facebook_app_id">1228154921648094</string>
+    <string name="fb_login_protocol_scheme">fb1234</string>
+    <string name="facebook_client_token">7ca03c4380ed59b05d1847e333f2bce5</string>
+
+
+</resources>
