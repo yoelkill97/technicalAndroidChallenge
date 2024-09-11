@@ -25,10 +25,10 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegisterViewModelTest{
 
-    @MockK
+    @RelaxedMockK
     private lateinit var repository: RegisterRepository
 
-    @MockK
+    @RelaxedMockK
     private lateinit var useCase: RegisterClientUseCase
 
 
