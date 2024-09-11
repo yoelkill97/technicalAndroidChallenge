@@ -1,5 +1,6 @@
 package com.example.technicalchallenge.di
 
+import android.content.Context
 import com.example.technicalchallenge.domain.repositories.AuthRepository
 import com.example.technicalchallenge.data.repositories.AuthRepositoryImpl
 import com.example.technicalchallenge.domain.repositories.RegisterRepository
@@ -9,6 +10,7 @@ import com.google.firebase.database.FirebaseDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -24,6 +26,11 @@ object AppModule {
     @Singleton
     fun providesFirebaseDataBase()  = FirebaseDatabase.getInstance()
 
+    @Singleton
+    @Provides
+    fun provideContext(@ApplicationContext context: Context): Context {
+        return context
+    }
 
     @Provides
     @Singleton

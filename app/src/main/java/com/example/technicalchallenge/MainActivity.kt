@@ -13,6 +13,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.technicalchallenge.navigation.NavigationGraph
 import com.example.technicalchallenge.ui.theme.TechnicalChallengeTheme
 import com.facebook.FacebookSdk
+import com.google.firebase.FirebaseApp
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -23,7 +24,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         FacebookSdk.sdkInitialize(applicationContext);
-
+        FirebaseApp.initializeApp(this)
         setContent {
             NavigationGraph()
         }

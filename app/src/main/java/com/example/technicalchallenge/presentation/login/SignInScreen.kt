@@ -37,20 +37,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.technicalchallenge.R
 import com.example.technicalchallenge.presentation.components.CodeValidationDialog
-import com.example.technicalchallenge.presentation.components.CustomTextField
 import com.example.technicalchallenge.presentation.components.LoadingScreen
 import com.example.technicalchallenge.presentation.components.PhoneInputCode
-import com.example.technicalchallenge.util.boldTitleStyle
 import com.example.technicalchallenge.util.colorBackground
-import com.example.technicalchallenge.util.colorMediumBlue
 import com.facebook.CallbackManager
 import com.facebook.FacebookCallback
 import com.facebook.FacebookException
@@ -60,16 +54,10 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
-import com.google.firebase.FirebaseException
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FacebookAuthProvider
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.auth.PhoneAuthCredential
-import com.google.firebase.auth.PhoneAuthOptions
 import com.google.firebase.auth.PhoneAuthProvider
-import kotlinx.coroutines.launch
-import java.util.concurrent.TimeUnit
 
 @Preview
 @Composable
@@ -78,105 +66,95 @@ fun SingInPreview() {
 }
 
 @Composable
-fun SingInPage( onNavigateToRegister: () -> Unit,
+fun SingInPage(
+    onNavigateToRegister: () -> Unit,
     viewModel: LoginScreenViewModel = hiltViewModel(),
 ) {
-    val loadingState = viewModel.loadingState.collectAsState()
-    SignInScreen(onNavigateToRegister = onNavigateToRegister ,loadingState = loadingState.value, onLogin = { viewModel.signWhitFirebase(it) },onLoadingChange = {viewModel.loadingStateChange(it)})
-}
-
-@Composable
-fun SignInScreen(
-    onNavigateToRegister: () -> Unit = {},
-    loadingState: LoadingState = LoadingState.IDLE,
-    onLogin: (AuthCredential) -> Unit = {},
-    context: Context = LocalContext.current,
-    onLoadingChange: (Boolean) -> Unit = {},
-) {
-    val callbackManager = remember { CallbackManager.Factory.create() }
-    val auth: FirebaseAuth = FirebaseAuth.getInstance()
-    val googleSignInClient = remember { getGoogleSignInClient(context) }
-    var showModalValidationPhone by remember { mutableStateOf(false) }
-    var codeInput by remember { mutableStateOf("") }
+    val authState = viewModel.authState.collectAsState()
+    val context: Context = LocalContext.current
     var storedVerificationId by remember { mutableStateOf("") }
     var resendToken by remember { mutableStateOf<PhoneAuthProvider.ForceResendingToken?>(null) }
-    val scope = rememberCoroutineScope()
+    var showModalValidationPhone by remember { mutableStateOf(false) }
 
+    LaunchedEffect(key1 = authState.value) {
+        when (val state = authState.value) {
+            is AuthState.Success -> {
 
-    val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) {
-            callbackManager.onActivityResult(it.resultCode, it.resultCode, it.data)
-            val task = GoogleSignIn.getSignedInAccountFromIntent(it.data)
-            try {
-                val account = task.getResult(ApiException::class.java)!!
-                val credential = GoogleAuthProvider.getCredential(account.idToken, null)
-                onLogin( credential)
-            } catch (e: ApiException) {
-                // Handle error
-                Log.d("TAG", "firebaseAuthWithGoogle: ${e.localizedMessage}")
-            }
-
-        }
-    LaunchedEffect(key1 = loadingState) {
-        when (val state = loadingState) {
-            is LoadingState.SUCCESS -> {
-                scope.launch {
-                    onNavigateToRegister()
-                    Log.d(
-                        "TAG",
-                        "firebaseAuthWithFacebook: ${state.authResult.user?.displayName}"
-                    )
+                Log.d(
+                    "TAG",
+                    "firebaseAuth: ${state.authResult.user?.displayName}"
+                )
+                if(state.authResult.additionalUserInfo?.isNewUser == true) {
                     Toast.makeText(
                         context,
                         "Sign In ${state.authResult.user?.displayName}",
                         Toast.LENGTH_LONG
                     ).show()
                 }
+                onNavigateToRegister()
+                viewModel.loginEventConsumed()
+
             }
 
-            is LoadingState.ERROR -> {
+            is AuthState.CodeSent -> {
+                Log.d(
+                    "TAG",
+                    "SendCode: ${state.verificationId}"
+                )
+                storedVerificationId = state.verificationId
+                resendToken = state.resendToken
+                showModalValidationPhone = true
 
-                scope.launch {
-                    Toast.makeText(context, "Error: ${state.error}", Toast.LENGTH_LONG).show()
-                }
+            }
+
+            is AuthState.Error -> {
+                Toast.makeText(context, "Error: ${state.message}", Toast.LENGTH_LONG).show()
             }
 
             else -> {
             }
         }
     }
-    fun startPhoneVerification(phoneNumber: String) {
-         onLoadingChange(true)
-        val options = PhoneAuthOptions.newBuilder(auth)
-            .setPhoneNumber(phoneNumber)
-            .setTimeout(60L, TimeUnit.SECONDS)
-            .setActivity(context as Activity)
-            .setCallbacks(object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
-                override fun onVerificationCompleted(credential: PhoneAuthCredential) {
-                    onLoadingChange(false)
-                    Log.d("PhoneAuth", "onVerificationCompleted:$credential")
-                    onLogin(credential)
-                }
 
-                override fun onVerificationFailed(e: FirebaseException) {
-                    onLoadingChange(false)
-                    Log.w("PhoneAuth", "onVerificationFailed", e)
-                }
+    SignInScreen(
+        authState = authState.value,
+        onLogin = { viewModel.signWhitFirebase(it) },
+        onValidationPhoneNumber = { viewModel.phoneVerification(it, context as Activity) },
+        showModalValidationPhone = viewModel.showModalValidationPhone.value,
+        storedVerificationId = viewModel.storedVerificationId.value,
+        onChangeshowModalValidationPhone = { showModalValidationPhone = it })
+}
 
-                override fun onCodeSent(
-                    verificationId: String,
-                    token: PhoneAuthProvider.ForceResendingToken,
-                ) {
-                    Log.d("PhoneAuth", "onCodeSent:$verificationId")
-                    onLoadingChange(false)
-                    storedVerificationId = verificationId
-                    resendToken = token
-                    showModalValidationPhone = true
+@Composable
+fun SignInScreen(
+    authState: AuthState = AuthState.Idle,
+    onLogin: (AuthCredential) -> Unit = {},
+    onValidationPhoneNumber: (String) -> Unit = {},
+    showModalValidationPhone: Boolean = false,
+    storedVerificationId: String = "",
+    onChangeshowModalValidationPhone: (Boolean) -> Unit = {}
+) {
+    val context: Context = LocalContext.current
+    val callbackManager = remember { CallbackManager.Factory.create() }
+    val googleSignInClient = remember { getGoogleSignInClient(context) }
+    var codeInput by remember { mutableStateOf("") }
 
-                }
-            })
-            .build()
-        PhoneAuthProvider.verifyPhoneNumber(options)
-    }
+
+    val launcher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) {
+            callbackManager.onActivityResult(it.resultCode, it.resultCode, it.data)
+            val task = GoogleSignIn.getSignedInAccountFromIntent(it.data)
+            try {
+                val account = task.getResult(ApiException::class.java)!!
+                val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+                onLogin(credential)
+            } catch (e: ApiException) {
+                // Handle error
+                Log.d("TAG", "firebaseAuthWithGoogle: ${e.localizedMessage}")
+            }
+
+        }
+
     fun loginManagerFacebook() {
         LoginManager.getInstance().logInWithReadPermissions(
             context as Activity, listOf("email", "public_profile")
@@ -197,7 +175,7 @@ fun SignInScreen(
                 override fun onSuccess(result: LoginResult) {
 
                     val credential =
-                        FacebookAuthProvider.getCredential(result.accessToken.token )
+                        FacebookAuthProvider.getCredential(result.accessToken.token)
                     onLogin(credential)
                 }
 
@@ -236,16 +214,17 @@ fun SignInScreen(
                 .fillMaxHeight(0.18f)
         )
         //PhoneVerificationButton(viewModel, auth)
-        PhoneInputCode(onVerificationCode = {   startPhoneVerification(it)})
+        PhoneInputCode(onVerificationCode = { onValidationPhoneNumber(it) })
         CodeValidationDialog(
             codeInput = codeInput,
             isShowingDialog = showModalValidationPhone,
-            onDismiss = { showModalValidationPhone = false },
+            onDismiss = {onChangeshowModalValidationPhone(!showModalValidationPhone)} ,
             onCodeChange = { codeInput = it },
             onValidate = { code ->
                 val credential = PhoneAuthProvider.getCredential(storedVerificationId, code)
                 onLogin(credential)
-            },)
+            },
+        )
         Button(
             onClick = {
                 val signInIntent = googleSignInClient.signInIntent
@@ -308,7 +287,7 @@ fun SignInScreen(
             }
         }
     }
-    LoadingScreen(isShowingDialog = loadingState is LoadingState.LOADING)
+    LoadingScreen(isShowingDialog = authState is AuthState.Loading)
 
 
 }
